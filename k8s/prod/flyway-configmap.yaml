@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: flyway-sql-files
+  namespace: study-prod
+data:
+  V1__create_items.sql: |
+    CREATE TABLE items (
+        id BIGSERIAL PRIMARY KEY,
+        name VARCHAR(120) NOT NULL,
+        description TEXT,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
+    CREATE INDEX idx_items_created_at ON items (created_at DESC);
+  V2__add_price_to_items.sql: |
+    ALTER TABLE items
+    ADD COLUMN price NUMERIC(10,2);
+  V3__add_price2_to_items.sql: |
+    ALTER TABLE items
+    ADD COLUMN price2 NUMERIC(10,2);
