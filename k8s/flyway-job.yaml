@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: flyway-migrate
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: flyway
+          image: flyway/flyway:10-alpine
+          args: ["-connectRetries=60", "migrate"]
+          env:
+            - name: FLYWAY_URL
+              value: jdbc:postgresql://hello-copilot-postgres:5432/hello_copilot
+            - name: FLYWAY_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-user
+            - name: FLYWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+          volumeMounts:
+            - name: flyway-sql
+              mountPath: /flyway/sql
+      volumes:
+        - name: flyway-sql
+          configMap:
+            name: flyway-sql-files
