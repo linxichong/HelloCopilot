@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Sensor
+metadata:
+  name: hello-copilot-github-push
+  namespace: argo-events
+spec:
+  template:
+    serviceAccountName: hello-copilot-events-sensor
+  dependencies:
+    - name: github-push-master
+      eventSourceName: hello-copilot-github-webhook
+      eventName: github
+      filters:
+        data:
+          - path: body.repository.full_name
+            type: string
+            value:
+              - linxichong/HelloCopilot
+          - path: body.ref
+            type: string
+            value:
+              - refs/heads/master
+          - path: body.head_commit.author.name
+            type: string
+            comparator: "!="
+            value:
+              - hello-copilot-bot
+  triggers:
+    - template:
+        name: hello-copilot-cicd
+        k8s:
+          operation: create
+          source:
+            resource:
+              apiVersion: argoproj.io/v1alpha1
+              kind: Workflow
+              metadata:
+                generateName: hello-copilot-cicd-
+                namespace: study-dev
+                labels:
+                  triggered-by: argo-events
+              spec:
+                workflowTemplateRef:
+                  name: hello-copilot-cicd

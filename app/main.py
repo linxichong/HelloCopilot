@@ -20,7 +20,12 @@ def health() -> dict[str, str]:
 
 @app.post("/items", response_model=ItemRead, status_code=status.HTTP_201_CREATED)
 def create_item(payload: ItemCreate, db: DbSession) -> Item:
-    item = Item(name=payload.name, description=payload.description)
+    item = Item(
+        name=payload.name,
+        description=payload.description,
+        price=payload.price,
+        price2=payload.price2,
+    )
     db.add(item)
     db.commit()
     db.refresh(item)
