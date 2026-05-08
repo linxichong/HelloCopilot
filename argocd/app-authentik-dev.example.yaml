@@ -1,0 +1,40 @@
+# Example only. Copy this file, replace CHANGE_ME values, and apply it manually
+# if you want Argo CD to manage authentik through the upstream Helm chart.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: authentik-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://charts.goauthentik.io
+    chart: authentik
+    targetRevision: "*"
+    helm:
+      releaseName: authentik
+      values: |
+        authentik:
+          secret_key: "CHANGE_ME_GENERATE_WITH_OPENSSL_RAND"
+          error_reporting:
+            enabled: false
+          postgresql:
+            password: "CHANGE_ME_DATABASE_PASSWORD"
+        server:
+          replicas: 1
+          ingress:
+            enabled: false
+        worker:
+          replicas: 1
+        postgresql:
+          enabled: true
+          auth:
+            password: "CHANGE_ME_DATABASE_PASSWORD"
+        redis:
+          enabled: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: authentik
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

@@ -28,7 +28,11 @@
 ├── .dockerignore
 ├── argocd/
 │   ├── app-dev.yaml
-│   └── app-prod.yaml
+│   ├── app-prod.yaml
+│   └── app-authentik-dev.example.yaml
+├── authentik/
+│   └── dev/
+│       └── values.example.yaml
 ├── argo-events/
 │   └── dev/
 │       ├── eventbus.yaml
@@ -133,9 +137,9 @@ kubectl apply -f k8s/prod/app-deployment.yaml
 等待 PostgreSQL 和 Flyway 迁移完成后，使用端口转发访问服务：
 
 ```bash
-kubectl port-forward service/hello-copilot 8000:80 -n study-dev
+kubectl port-forward --address 0.0.0.0 service/hello-copilot 8000:80 -n study-dev
 # 或者对于本番环境：
-# kubectl port-forward service/hello-copilot 8000:80 -n study-prod
+# kubectl port-forward --address 0.0.0.0 service/hello-copilot 8000:80 -n study-prod
 ```
 
 然后打开：
@@ -152,6 +156,138 @@ kubectl port-forward service/hello-copilot 8000:80 -n study-dev
 - `flyway-migrate` 在 Argo CD 中作为 `PreSync` hook 运行，每次 Argo CD sync 前会重新创建并执行；迁移失败时会停止后续部署。
 - 如果绕过 Argo CD 直接用 `kubectl apply`，Kubernetes Job 不会自动重复执行，需要先删除旧 Job 再应用相应的 `k8s/dev/flyway-job.yaml` 或 `k8s/prod/flyway-job.yaml`。
 
+## Argo CD
+
+访问 Argo CD UI：
+
+```bash
+kubectl -n argocd port-forward --address 0.0.0.0 service/argocd-server 8080:443
+```
+
+然后打开：
+
+- https://127.0.0.1:8080
+
+注意这里是 `https`，不是 `http`。
+
+如果在 WSL 里启动 port-forward，但 Windows 浏览器不能直接访问 `127.0.0.1`，可以查看 WSL IP：
+
+```bash
+hostname -I
+```
+
+假设输出是 `172.21.91.143`，Windows 浏览器打开：
+
+- https://172.21.91.143:8080
+
+如果 `8080` 被占用，可以换成本地其他端口：
+
+```bash
+kubectl -n argocd port-forward --address 0.0.0.0 service/argocd-server 8081:443
+```
+
+然后打开：
+
+- https://172.21.91.143:8081
+
+应用当前项目的 Argo CD Application：
+
+```bash
+kubectl apply -f argocd/app-dev.yaml
+kubectl apply -f argocd/app-prod.yaml
+```
+
+### 使用 Authentik 登录 Argo CD
+
+本地 Kind/WSL 环境里，OIDC 地址需要同时被 Windows 浏览器和集群内的 Argo CD 访问到。建议同时启动两个 port-forward，并使用 WSL IP 作为访问地址：
+
+```bash
+kubectl -n authentik port-forward --address 0.0.0.0 service/authentik-server 9000:80
+kubectl -n argocd port-forward --address 0.0.0.0 service/argocd-server 8080:443
+hostname -I
+```
+
+假设 WSL IP 是 `172.21.91.143`，下面示例使用：
+
+- Authentik URL：`http://172.21.91.143:9000`
+- Argo CD URL：`https://172.21.91.143:8080`
+
+在 Authentik Admin interface 中创建 Argo CD 的应用：
+
+1. 进入 `Directory` -> `Groups`，创建 `ArgoCD Admins`，并把你的用户加入该组。
+2. 可选：创建 `ArgoCD Viewers`，用于只读用户。
+3. 进入 `Applications` -> `Applications`，创建新应用。
+4. Provider type 选择 `OAuth2/OpenID Connect`。
+5. Application 名称填写 `Argo CD`，slug 建议填写 `argocd`。
+6. Redirect URI 添加：
+
+```text
+https://172.21.91.143:8080/api/dex/callback
+https://localhost:8085/auth/callback
+```
+
+创建完成后，记录 Authentik 生成的：
+
+- Client ID
+- Client Secret
+- Application slug，例如 `argocd`
+
+把 Authentik client secret 写入 Argo CD：
+
+```bash
+AUTHENTIK_CLIENT_SECRET="替换成 Authentik 里的 Client Secret"
+AUTHENTIK_CLIENT_SECRET_B64="$(printf '%s' "$AUTHENTIK_CLIENT_SECRET" | base64 -w 0)"
+
+kubectl -n argocd patch secret argocd-secret \
+  --type merge \
+  -p "{\"data\":{\"dex.authentik.clientSecret\":\"${AUTHENTIK_CLIENT_SECRET_B64}\"}}"
+```
+
+配置 Argo CD 使用 Authentik：
+
+```bash
+ARGOCD_URL="https://172.21.91.143:8080"
+AUTHENTIK_ISSUER="http://172.21.91.143:9000/application/o/argocd/"
+AUTHENTIK_CLIENT_ID="替换成 Authentik 里的 Client ID"
+
+kubectl -n argocd patch cm argocd-cm \
+  --type merge \
+  -p "{
+    \"data\": {
+      \"url\": \"${ARGOCD_URL}\",
+      \"dex.config\": \"connectors:\\n- type: oidc\\n  id: authentik\\n  name: authentik\\n  config:\\n    issuer: ${AUTHENTIK_ISSUER}\\n    clientID: ${AUTHENTIK_CLIENT_ID}\\n    clientSecret: \\$dex.authentik.clientSecret\\n    insecureEnableGroups: true\\n    scopes:\\n    - openid\\n    - profile\\n    - email\\n    - groups\\n\"
+    }
+  }"
+```
+
+配置 Argo CD RBAC，把 Authentik 组映射到 Argo CD 角色：
+
+```bash
+kubectl -n argocd patch cm argocd-rbac-cm \
+  --type merge \
+  -p '{
+    "data": {
+      "policy.csv": "g, ArgoCd Admins, role:admin\ng, ArgoCD Admins, role:admin\ng, ArgoCd Viewers, role:readonly\ng, ArgoCD Viewers, role:readonly\n",
+      "scopes": "[groups]"
+    }
+  }'
+```
+
+重启 Argo CD Dex 和 server：
+
+```bash
+kubectl -n argocd rollout restart deployment/argocd-dex-server
+kubectl -n argocd rollout restart deployment/argocd-server
+kubectl -n argocd rollout status deployment/argocd-dex-server
+kubectl -n argocd rollout status deployment/argocd-server
+```
+
+重新打开 Argo CD：
+
+- https://172.21.91.143:8080
+
+登录页会出现 `LOG IN VIA AUTHENTIK`，点击后会跳转到 Authentik 登录。
+
 ## Argo Workflows
 
 ### 安装控制器
@@ -167,7 +303,7 @@ kubectl apply --server-side -f "https://github.com/argoproj/argo-workflows/relea
 访问 Argo Workflows UI：
 
 ```bash
-kubectl -n argo port-forward service/argo-server 2746:2746
+kubectl -n argo port-forward --address 0.0.0.0 service/argo-server 2746:2746
 ```
 
 然后打开：
@@ -250,7 +386,7 @@ kubectl apply -f argo-events/dev/sensor.yaml
 本地测试 webhook：
 
 ```bash
-kubectl -n argo-events port-forward service/hello-copilot-github-webhook-eventsource-svc 12000:12000
+kubectl -n argo-events port-forward --address 0.0.0.0 service/hello-copilot-github-webhook-eventsource-svc 12000:12000
 
 curl -X POST http://127.0.0.1:12000/github \
   -H "Content-Type: application/json" \
@@ -273,3 +409,59 @@ Events: Just the push event
 ```
 
 Sensor 已经过滤掉 `hello-copilot-bot` 提交的 manifest commit，避免 CI/CD 工作流 push 回 GitHub 后再次触发自己。
+
+## Authentik
+
+Authentik 可以作为这个学习项目里的统一登录和 OIDC Provider。后续可以把 Argo CD、Argo Workflows UI 或 FastAPI 接到 Authentik 上做单点登录。
+
+官方 Kubernetes 安装推荐使用 Helm chart。本项目提供了学习用的 values 模板：
+
+```bash
+cp authentik/dev/values.example.yaml authentik/dev/values.yaml
+```
+
+生成 `secret_key` 和数据库密码：
+
+```bash
+openssl rand 60 | base64 -w 0
+openssl rand 36 | base64 -w 0
+```
+
+把生成的值填入 `authentik/dev/values.yaml` 里的：
+
+- `authentik.secret_key`
+- `authentik.postgresql.password`
+- `postgresql.auth.password`
+
+安装 Authentik：
+
+```bash
+helm repo add authentik https://charts.goauthentik.io
+helm repo update
+helm upgrade --install authentik authentik/authentik \
+  -n authentik \
+  --create-namespace \
+  -f authentik/dev/values.yaml
+```
+
+等待组件启动：
+
+```bash
+kubectl -n authentik get pods
+kubectl -n authentik rollout status deployment/authentik-server
+kubectl -n authentik rollout status deployment/authentik-worker
+```
+
+本地访问：
+
+```bash
+kubectl -n authentik port-forward --address 0.0.0.0 service/authentik-server 9000:80
+```
+
+然后打开：
+
+- http://127.0.0.1:9000/if/flow/initial-setup/
+
+首次进入这个地址时设置默认 `akadmin` 用户的密码。注意 URL 最后需要保留 `/`。
+
+如果希望用 Argo CD 管理 Authentik，可以参考 `argocd/app-authentik-dev.example.yaml`。这个文件只是示例，不要直接使用里面的 `CHANGE_ME` 值。

@@ -1,0 +1,24 @@
+# Copy this file to authentik/dev/values.yaml and replace the CHANGE_ME values.
+# Do not commit authentik/dev/values.yaml.
+authentik:
+  secret_key: "CHANGE_ME_GENERATE_WITH_OPENSSL_RAND"
+  error_reporting:
+    enabled: false
+  postgresql:
+    password: "CHANGE_ME_DATABASE_PASSWORD"
+
+server:
+  replicas: 1
+  ingress:
+    enabled: false
+
+worker:
+  replicas: 1
+
+postgresql:
+  enabled: true
+  auth:
+    password: "CHANGE_ME_DATABASE_PASSWORD"
+
+redis:
+  enabled: true

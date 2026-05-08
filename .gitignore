@@ -14,3 +14,4 @@ docker-compose.override.yml
 .vscode/
 .idea/
 argo-workflows/**/cicd-secrets.yaml
+authentik/**/values.yaml
