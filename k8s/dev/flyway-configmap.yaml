@@ -4,6 +4,10 @@ kind: ConfigMap
 metadata:
   name: flyway-sql-files
   namespace: study-dev
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 data:
   V1__create_items.sql: |
     CREATE TABLE items (

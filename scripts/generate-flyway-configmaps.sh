@@ -12,6 +12,10 @@ generate_configmap() {
     printf "metadata:\n"
     printf "  name: flyway-sql-files\n"
     printf "  namespace: %s\n" "$namespace"
+    printf "  annotations:\n"
+    printf "    argocd.argoproj.io/hook: PreSync\n"
+    printf "    argocd.argoproj.io/sync-wave: \"-1\"\n"
+    printf "    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation\n"
     printf "data:\n"
     for migration_file in db/migration/*.sql; do
       migration_name="${migration_file##*/}"
