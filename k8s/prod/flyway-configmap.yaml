@@ -19,3 +19,6 @@ data:
   V3__add_price2_to_items.sql: |
     ALTER TABLE items
     ADD COLUMN price2 NUMERIC(10,2);
+  V4__drop_price2_from_items.sql: |
+    ALTER TABLE items
+    DROP COLUMN price2;

@@ -16,7 +16,8 @@
 │   └── migration/
 │       ├── V1__create_items.sql
 │       ├── V2__add_price_to_items.sql
-│       └── V3__add_price2_to_items.sql
+│       ├── V3__add_price2_to_items.sql
+│       └── V4__drop_price2_from_items.sql
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example

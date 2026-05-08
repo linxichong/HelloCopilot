@@ -15,7 +15,6 @@ class Item(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     price: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
-    price2: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
