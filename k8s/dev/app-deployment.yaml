@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: hello-copilot-app
-          image: hellocopilot:local
+          image: ""
           ports:
             - containerPort: 8000
           env:
