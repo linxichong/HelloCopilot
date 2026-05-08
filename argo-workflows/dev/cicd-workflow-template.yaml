@@ -1,0 +1,172 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: hello-copilot-cicd
+  namespace: study-dev
+spec:
+  entrypoint: cicd
+  serviceAccountName: hello-copilot-workflow
+  volumeClaimTemplates:
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
+  arguments:
+    parameters:
+      - name: repo-url
+        value: https://github.com/linxichong/HelloCopilot.git
+      - name: branch
+        value: master
+      - name: image-repo
+        value: ghcr.io/linxichong/hellocopilot
+      - name: github-repo
+        value: linxichong/HelloCopilot
+      - name: manifest-path
+        value: k8s/dev/app-deployment.yaml
+      - name: argocd-app
+        value: hello-copilot-dev
+      - name: test-command
+        value: python -m compileall app && python -c "from app.main import app; print(app.title)"
+
+  templates:
+    - name: cicd
+      steps:
+        - - name: clone
+            template: clone
+        - - name: test
+            template: test
+        - - name: build-and-push-image
+            template: build-and-push-image
+            arguments:
+              parameters:
+                - name: commit-sha
+                  value: "{{steps.clone.outputs.parameters.commit-sha}}"
+        - - name: update-manifest-and-push
+            template: update-manifest-and-push
+            arguments:
+              parameters:
+                - name: commit-sha
+                  value: "{{steps.clone.outputs.parameters.commit-sha}}"
+        - - name: sync-argocd
+            template: sync-argocd
+
+    - name: clone
+      outputs:
+        parameters:
+          - name: commit-sha
+            valueFrom:
+              path: /workspace/commit-sha.txt
+      container:
+        image: alpine/git:2.49.1
+        workingDir: /workspace
+        command: [sh, -c]
+        args:
+          - |
+            set -eu
+            git clone --branch "{{workflow.parameters.branch}}" "{{workflow.parameters.repo-url}}" repo
+            cd repo
+            git rev-parse --short=12 HEAD > /workspace/commit-sha.txt
+        volumeMounts:
+          - name: workdir
+            mountPath: /workspace
+
+    - name: test
+      container:
+        image: python:3.14-slim
+        workingDir: /workspace/repo
+        command: [sh, -c]
+        args:
+          - |
+            set -eu
+            python -m pip install --no-cache-dir -r requirements.txt
+            {{workflow.parameters.test-command}}
+        volumeMounts:
+          - name: workdir
+            mountPath: /workspace
+
+    - name: build-and-push-image
+      inputs:
+        parameters:
+          - name: commit-sha
+      container:
+        image: gcr.io/kaniko-project/executor:v1.24.0
+        args:
+          - --context=/workspace/repo
+          - --dockerfile=/workspace/repo/Dockerfile
+          - --destination={{workflow.parameters.image-repo}}:{{inputs.parameters.commit-sha}}
+          - --destination={{workflow.parameters.image-repo}}:latest
+        volumeMounts:
+          - name: workdir
+            mountPath: /workspace
+          - name: registry-config
+            mountPath: /kaniko/.docker
+      volumes:
+        - name: registry-config
+          secret:
+            secretName: hello-copilot-registry
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+
+    - name: update-manifest-and-push
+      inputs:
+        parameters:
+          - name: commit-sha
+      container:
+        image: alpine/git:2.49.1
+        workingDir: /workspace/repo
+        command: [sh, -c]
+        args:
+          - |
+            set -eu
+            apk add --no-cache yq
+            COMMIT_SHA="{{inputs.parameters.commit-sha}}"
+            export IMAGE="{{workflow.parameters.image-repo}}:${COMMIT_SHA}"
+            yq -i '(.spec.template.spec.containers[] | select(.name == "hello-copilot-app").image) = strenv(IMAGE)' "{{workflow.parameters.manifest-path}}"
+            git config user.name "hello-copilot-bot"
+            git config user.email "hello-copilot-bot@users.noreply.github.com"
+            if git diff --quiet; then
+              echo "Manifest already uses ${IMAGE}"
+              exit 0
+            fi
+            git add "{{workflow.parameters.manifest-path}}"
+            git commit -m "chore: deploy ${COMMIT_SHA}"
+            git push "https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/{{workflow.parameters.github-repo}}.git" "HEAD:{{workflow.parameters.branch}}"
+        env:
+          - name: GITHUB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: hello-copilot-github
+                key: username
+          - name: GITHUB_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: hello-copilot-github
+                key: token
+        volumeMounts:
+          - name: workdir
+            mountPath: /workspace
+
+    - name: sync-argocd
+      container:
+        image: quay.io/argoproj/argocd:v3.1.9
+        command: [sh, -c]
+        args:
+          - |
+            set -eu
+            argocd app sync "{{workflow.parameters.argocd-app}}" --server "${ARGOCD_SERVER}" --auth-token "${ARGOCD_TOKEN}" --grpc-web --insecure
+            argocd app wait "{{workflow.parameters.argocd-app}}" --server "${ARGOCD_SERVER}" --auth-token "${ARGOCD_TOKEN}" --grpc-web --insecure --health --sync --timeout 180
+        env:
+          - name: ARGOCD_SERVER
+            valueFrom:
+              secretKeyRef:
+                name: hello-copilot-argocd
+                key: server
+          - name: ARGOCD_TOKEN
+            valueFrom:
+              secretKeyRef:
+                name: hello-copilot-argocd
+                key: token

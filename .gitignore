@@ -13,3 +13,4 @@ docker-compose.override.yml
 .kube/
 .vscode/
 .idea/
+argo-workflows/**/cicd-secrets.yaml
