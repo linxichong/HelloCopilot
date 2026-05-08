@@ -102,6 +102,7 @@ curl http://127.0.0.1:8000/items
 kind create cluster --name hellocopilot
 docker build -t hellocopilot:local .
 kind load docker-image hellocopilot:local --name hellocopilot
+sh scripts/generate-flyway-configmaps.sh
 kubectl apply -f k8s/dev/namespace.yaml
 kubectl apply -f k8s/dev/postgres-secret.yaml
 kubectl apply -f k8s/dev/postgres-service.yaml
@@ -115,6 +116,7 @@ kubectl apply -f k8s/dev/app-deployment.yaml
 ### 本番环境（study-prod）
 
 ```bash
+sh scripts/generate-flyway-configmaps.sh
 kubectl apply -f k8s/prod/namespace.yaml
 kubectl apply -f k8s/prod/postgres-secret.yaml
 kubectl apply -f k8s/prod/postgres-pvc.yaml
@@ -143,6 +145,7 @@ kubectl port-forward service/hello-copilot 8000:80 -n study-dev
 
 - 开发环境使用 `emptyDir` 存储，数据仅在 Pod 存活期间保留。
 - 本番环境使用 PVC 存储，数据会在 Pod 重建时保留。
+- `flyway-configmap.yaml` 由 `scripts/generate-flyway-configmaps.sh` 从 `db/migration/*.sql` 生成，不要手动编辑 ConfigMap 里的 SQL。
 - 如果需要重新执行迁移，可以删除旧 Job 后重新应用相应的 `k8s/dev/flyway-job.yaml` 或 `k8s/prod/flyway-job.yaml`。
 
 ## Argo Workflows

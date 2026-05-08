@@ -125,6 +125,7 @@ spec:
             apk add --no-cache yq
             COMMIT_SHA="{{inputs.parameters.commit-sha}}"
             export IMAGE="{{workflow.parameters.image-repo}}:${COMMIT_SHA}"
+            sh scripts/generate-flyway-configmaps.sh
             yq -i '(.spec.template.spec.containers[] | select(.name == "hello-copilot-app").image) = strenv(IMAGE)' "{{workflow.parameters.manifest-path}}"
             git config user.name "hello-copilot-bot"
             git config user.email "hello-copilot-bot@users.noreply.github.com"
