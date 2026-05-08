@@ -17,7 +17,7 @@ spec:
         - name: hello-copilot-registry
       containers:
         - name: hello-copilot-app
-          image: ghcr.io/linxichong/hellocopilot:d0306dac3164
+          image: ghcr.io/linxichong/hellocopilot:be9b0c1fc738
           ports:
             - containerPort: 8000
           env:
