@@ -3,3 +3,4 @@ uvicorn[standard]==0.34.0
 SQLAlchemy==2.0.49
 psycopg[binary]==3.3.4
 pydantic-settings==2.7.1
+PyJWT[crypto]==2.10.1

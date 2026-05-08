@@ -310,6 +310,73 @@ kubectl -n argo port-forward --address 0.0.0.0 service/argo-server 2746:2746
 
 - https://localhost:2746
 
+### 使用 Authentik 登录 Argo Workflows
+
+Argo Workflows UI 也可以接入 Authentik SSO。为了让 Authentik 用户门户里单独显示 `Argo Workflows`，建议为它创建独立的 Authentik Application / Provider：
+
+- Application 名称：`Argo Workflows`
+- Slug：`argo-workflows`
+- Provider type：`OAuth2/OpenID Connect`
+- Launch URL：`https://172.21.91.143:2746`
+- Redirect URI：
+
+```text
+https://172.21.91.143:2746/oauth2/callback
+```
+
+这里的 `172.21.91.143` 替换成当前 WSL IP：
+
+```bash
+hostname -I
+```
+
+准备 Argo Workflows SSO Secret：
+
+```bash
+cp argo-workflows/dev/sso-secret.example.yaml argo-workflows/dev/sso-secret.yaml
+```
+
+把 `Argo Workflows` Provider 的 `Client ID` 和 `Client Secret` 填入 `argo-workflows/dev/sso-secret.yaml`，然后应用：
+
+```bash
+kubectl apply -f argo-workflows/dev/sso-secret.yaml
+kubectl apply -f argo-workflows/dev/sso-rbac.yaml
+```
+
+配置 Argo Workflows SSO：
+
+```bash
+kubectl -n argo patch cm workflow-controller-configmap \
+  --type merge \
+  -p '{
+    "data": {
+      "sso": "issuer: http://172.21.91.143:9000/application/o/argo-workflows/\nclientId:\n  name: argo-workflows-sso\n  key: client-id\nclientSecret:\n  name: argo-workflows-sso\n  key: client-secret\nredirectUrl: https://172.21.91.143:2746/oauth2/callback\nscopes:\n- groups\n- email\n- profile\nrbac:\n  enabled: true\n"
+    }
+  }'
+```
+
+把 Argo Server 切换到 SSO 模式：
+
+```bash
+kubectl -n argo patch deployment argo-server \
+  --type json \
+  -p '[{"op":"replace","path":"/spec/template/spec/containers/0/args","value":["server","--auth-mode=sso"]}]'
+
+kubectl -n argo rollout status deployment/argo-server
+```
+
+重新启动 UI：
+
+```bash
+kubectl -n argo port-forward --address 0.0.0.0 service/argo-server 2746:2746
+```
+
+然后打开：
+
+- https://172.21.91.143:2746
+
+页面会跳转到 Authentik 登录。登录用户需要属于 `ArgoCd Admins` 或 `ArgoCD Admins` 组，才会映射到 `argo-server` ServiceAccount 的权限。
+
 ### CI/CD 流程
 
 `argo-workflows/dev/cicd-workflow-template.yaml` 提供了一个学习用 CI/CD 工作流：
@@ -465,3 +532,63 @@ kubectl -n authentik port-forward --address 0.0.0.0 service/authentik-server 900
 首次进入这个地址时设置默认 `akadmin` 用户的密码。注意 URL 最后需要保留 `/`。
 
 如果希望用 Argo CD 管理 Authentik，可以参考 `argocd/app-authentik-dev.example.yaml`。这个文件只是示例，不要直接使用里面的 `CHANGE_ME` 值。
+
+### 使用 Authentik 保护 FastAPI
+
+FastAPI 已支持校验 Authentik 签发的 JWT。`/health` 保持公开，`/me` 和 `/items` 相关接口会在启用认证后要求请求带 Bearer token。
+
+在 Authentik 中为 API 创建独立 Application / Provider：
+
+- Application 名称：`HelloCopilot API`
+- Slug：`hello-copilot-api`
+- Provider type：`OAuth2/OpenID Connect`
+- Launch URL：`http://172.21.91.143:8000/docs`
+
+记录该 Provider 的：
+
+- Client ID
+- Issuer：`http://172.21.91.143:9000/application/o/hello-copilot-api/`
+
+本地 `.env` 示例：
+
+```env
+AUTH_ENABLED=true
+AUTH_ISSUER=http://172.21.91.143:9000/application/o/hello-copilot-api/
+AUTH_AUDIENCE=<HelloCopilot API Provider 的 Client ID>
+AUTH_REQUIRED_GROUPS=App Users,ArgoCd Admins
+```
+
+如果只是学习 JWT 签名和 issuer 校验，可以先留空 `AUTH_AUDIENCE`；填入 Client ID 后会额外校验 token 的 audience。
+
+在 Kind 开发环境启用：
+
+```bash
+kubectl -n study-dev set env deployment/hello-copilot-app \
+  AUTH_ENABLED=true \
+  AUTH_ISSUER=http://172.21.91.143:9000/application/o/hello-copilot-api/ \
+  AUTH_AUDIENCE=<HelloCopilot API Provider 的 Client ID> \
+  AUTH_REQUIRED_GROUPS="App Users,ArgoCd Admins"
+
+kubectl -n study-dev rollout status deployment/hello-copilot-app
+```
+
+访问 API：
+
+```bash
+kubectl port-forward --address 0.0.0.0 service/hello-copilot 8000:80 -n study-dev
+```
+
+公开接口：
+
+```bash
+curl http://172.21.91.143:8000/health
+```
+
+受保护接口：
+
+```bash
+curl http://172.21.91.143:8000/me \
+  -H "Authorization: Bearer ${ACCESS_TOKEN}"
+```
+
+没有 token 访问 `/me` 或 `/items` 会返回 `401`；用户不在 `AUTH_REQUIRED_GROUPS` 中会返回 `403`。

@@ -4,6 +4,7 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.auth import AuthenticatedUser, require_user
 from app.database import get_db
 from app.models import Item
 from app.schemas import ItemCreate, ItemRead
@@ -11,6 +12,7 @@ from app.schemas import ItemCreate, ItemRead
 app = FastAPI(title="HelloCopilot API")
 
 DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[AuthenticatedUser, Depends(require_user)]
 
 
 @app.get("/health")
@@ -18,8 +20,13 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.get("/me", response_model=AuthenticatedUser)
+def me(current_user: CurrentUser) -> AuthenticatedUser:
+    return current_user
+
+
 @app.post("/items", response_model=ItemRead, status_code=status.HTTP_201_CREATED)
-def create_item(payload: ItemCreate, db: DbSession) -> Item:
+def create_item(payload: ItemCreate, db: DbSession, _current_user: CurrentUser) -> Item:
     item = Item(
         name=payload.name,
         name2=payload.name2,
@@ -33,13 +40,13 @@ def create_item(payload: ItemCreate, db: DbSession) -> Item:
 
 
 @app.get("/items", response_model=list[ItemRead])
-def list_items(db: DbSession) -> list[Item]:
+def list_items(db: DbSession, _current_user: CurrentUser) -> list[Item]:
     statement = select(Item).order_by(Item.created_at.desc(), Item.id.desc())
     return list(db.scalars(statement).all())
 
 
 @app.get("/items/{item_id}", response_model=ItemRead)
-def get_item(item_id: int, db: DbSession) -> Item:
+def get_item(item_id: int, db: DbSession, _current_user: CurrentUser) -> Item:
     item = db.get(Item, item_id)
     if item is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
