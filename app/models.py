@@ -12,6 +12,7 @@ class Item(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    name2: Mapped[Optional[str]] = mapped_column(String(120))
     description: Mapped[Optional[str]] = mapped_column(Text)
     age: Mapped[Optional[int]] = mapped_column()
     created_at: Mapped[datetime] = mapped_column(

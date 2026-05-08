@@ -37,3 +37,7 @@ data:
     ALTER TABLE items
     ADD COLUMN age INTEGER;
 
+  V7__add_name2_to_items.sql: |
+    ALTER TABLE items
+    ADD COLUMN name2 VARCHAR(120);
+

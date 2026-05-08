@@ -22,6 +22,7 @@ def health() -> dict[str, str]:
 def create_item(payload: ItemCreate, db: DbSession) -> Item:
     item = Item(
         name=payload.name,
+        name2=payload.name2,
         description=payload.description,
         age=payload.age,
     )

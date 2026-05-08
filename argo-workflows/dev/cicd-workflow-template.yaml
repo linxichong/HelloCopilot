@@ -133,7 +133,7 @@ spec:
               echo "Manifest already uses ${IMAGE}"
               exit 0
             fi
-            git add "{{workflow.parameters.manifest-path}}"
+            git add "{{workflow.parameters.manifest-path}}" k8s/dev/flyway-configmap.yaml k8s/prod/flyway-configmap.yaml
             git commit -m "chore: deploy ${COMMIT_SHA}"
             git push "https://${GITHUB_USERNAME}:${GITHUB_TOKEN}@github.com/{{workflow.parameters.github-repo}}.git" "HEAD:{{workflow.parameters.branch}}"
         env:
