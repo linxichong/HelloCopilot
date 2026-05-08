@@ -22,3 +22,6 @@ data:
   V4__drop_price2_from_items.sql: |
     ALTER TABLE items
     DROP COLUMN price2;
+  V5__drop_price_from_items.sql: |
+    ALTER TABLE items
+    DROP COLUMN price;

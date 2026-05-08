@@ -23,7 +23,6 @@ def create_item(payload: ItemCreate, db: DbSession) -> Item:
     item = Item(
         name=payload.name,
         description=payload.description,
-        price=payload.price,
     )
     db.add(item)
     db.commit()
