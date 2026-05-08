@@ -18,7 +18,8 @@
 │       ├── V2__add_price_to_items.sql
 │       ├── V3__add_price2_to_items.sql
 │       ├── V4__drop_price2_from_items.sql
-│       └── V5__drop_price_from_items.sql
+│       ├── V5__drop_price_from_items.sql
+│       └── V6__add_age_to_items.sql
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example
@@ -146,7 +147,8 @@ kubectl port-forward service/hello-copilot 8000:80 -n study-dev
 - 开发环境使用 `emptyDir` 存储，数据仅在 Pod 存活期间保留。
 - 本番环境使用 PVC 存储，数据会在 Pod 重建时保留。
 - `flyway-configmap.yaml` 由 `scripts/generate-flyway-configmaps.sh` 从 `db/migration/*.sql` 生成，不要手动编辑 ConfigMap 里的 SQL。
-- 如果需要重新执行迁移，可以删除旧 Job 后重新应用相应的 `k8s/dev/flyway-job.yaml` 或 `k8s/prod/flyway-job.yaml`。
+- `flyway-migrate` 在 Argo CD 中作为 `PreSync` hook 运行，每次 Argo CD sync 前会重新创建并执行；迁移失败时会停止后续部署。
+- 如果绕过 Argo CD 直接用 `kubectl apply`，Kubernetes Job 不会自动重复执行，需要先删除旧 Job 再应用相应的 `k8s/dev/flyway-job.yaml` 或 `k8s/prod/flyway-job.yaml`。
 
 ## Argo Workflows
 

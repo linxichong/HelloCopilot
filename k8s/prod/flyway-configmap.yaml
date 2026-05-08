@@ -29,3 +29,7 @@ data:
     ALTER TABLE items
     DROP COLUMN price;
 
+  V6__add_age_to_items.sql: |
+    ALTER TABLE items
+    ADD COLUMN age INTEGER;
+
