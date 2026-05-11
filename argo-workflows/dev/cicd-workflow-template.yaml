@@ -29,7 +29,7 @@ spec:
       - name: argocd-app
         value: hello-copilot-dev
       - name: test-command
-        value: python -m compileall app && python -c "from app.main import app; print(app.title)"
+        value: python -m compileall app tests && pytest
 
   templates:
     - name: cicd
@@ -81,7 +81,7 @@ spec:
         args:
           - |
             set -eu
-            python -m pip install --no-cache-dir -r requirements.txt
+            python -m pip install --no-cache-dir -r requirements-dev.txt
             {{workflow.parameters.test-command}}
         volumeMounts:
           - name: workdir
