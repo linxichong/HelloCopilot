@@ -36,6 +36,8 @@ uvicorn app.main:app --reload
 
 - API 文档：http://127.0.0.1:8000/docs
 - 健康检查：http://127.0.0.1:8000/health
+- 存活检查：http://127.0.0.1:8000/live
+- 就绪检查：http://127.0.0.1:8000/ready
 
 ## 示例接口
 
@@ -69,6 +71,7 @@ pytest
 测试覆盖：
 
 - 健康检查
+- liveness / readiness 检查
 - item 创建/查询/404
 - 认证关闭/开启行为
 - Authentik claims/group 解析

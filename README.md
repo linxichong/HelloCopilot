@@ -88,6 +88,8 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 
 - http://127.0.0.1:8000/docs
 - http://127.0.0.1:8000/health
+- http://127.0.0.1:8000/live
+- http://127.0.0.1:8000/ready
 
 ## 当前 K8s 设计
 
@@ -96,4 +98,5 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 - PostgreSQL 使用 StatefulSet。
 - PostgreSQL 通过 `volumeClaimTemplates` 自动创建 PVC。
 - Flyway Job 作为 Argo CD `PreSync` hook 执行。
+- Kubernetes liveness probe 使用 `/live`，readiness probe 使用 `/ready` 检查数据库连通性。
 - CI 构建镜像后更新 `k8s/dev/kustomization.yaml` 中的镜像 tag。

@@ -181,7 +181,7 @@ kubectl -n argo rollout status deployment/argo-server
 
 ## 使用 Authentik 保护 FastAPI
 
-FastAPI 已支持校验 Authentik 签发的 JWT。`/health` 保持公开，`/me` 和 `/items` 相关接口会在启用认证后要求请求带 Bearer token。
+FastAPI 已支持校验 Authentik 签发的 JWT。`/health`、`/live`、`/ready` 保持公开，`/me` 和 `/items` 相关接口会在启用认证后要求请求带 Bearer token。
 
 在 Authentik 中为 API 创建独立 Application / Provider：
 
@@ -215,6 +215,8 @@ kubectl -n study-dev rollout status deployment/hello-copilot-app
 
 ```bash
 curl http://172.21.91.143:8000/health
+curl http://172.21.91.143:8000/live
+curl http://172.21.91.143:8000/ready
 
 curl http://172.21.91.143:8000/me \
   -H "Authorization: Bearer ${ACCESS_TOKEN}"

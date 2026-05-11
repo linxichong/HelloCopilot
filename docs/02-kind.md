@@ -47,6 +47,8 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 
 - http://127.0.0.1:8000/docs
 - http://127.0.0.1:8000/health
+- http://127.0.0.1:8000/live
+- http://127.0.0.1:8000/ready
 
 ## K8s 资源设计
 
@@ -57,6 +59,8 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 - `hello-copilot-postgres-headless` 是 StatefulSet 使用的 headless Service。
 - `hello-copilot-postgres` 是 app 和 Flyway 访问数据库的普通 ClusterIP Service。
 - Flyway Job 在 Argo CD 中作为 `PreSync` hook 运行。
+- app 的 liveness probe 使用 `/live`，只检查进程是否存活。
+- app 的 readiness probe 使用 `/ready`，会执行数据库连通性检查。
 
 ## 常用查看命令
 

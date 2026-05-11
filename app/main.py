@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from app.auth import AuthenticatedUser, require_user
@@ -18,6 +18,23 @@ CurrentUser = Annotated[AuthenticatedUser, Depends(require_user)]
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/live")
+def live() -> dict[str, str]:
+    return {"status": "alive"}
+
+
+@app.get("/ready")
+def ready(db: DbSession) -> dict[str, str]:
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is not ready",
+        ) from exc
+    return {"status": "ready"}
 
 
 @app.get("/me", response_model=AuthenticatedUser)

@@ -1,12 +1,20 @@
 import pytest
 from fastapi import HTTPException
 
-from app.main import create_item, get_item, health, list_items
+from app.main import create_item, get_item, health, list_items, live, ready
 from app.schemas import ItemCreate
 
 
 def test_health_check_is_public() -> None:
     assert health() == {"status": "ok"}
+
+
+def test_live_check_does_not_require_dependencies() -> None:
+    assert live() == {"status": "alive"}
+
+
+def test_ready_check_validates_database(db_session) -> None:
+    assert ready(db_session) == {"status": "ready"}
 
 
 def test_create_list_and_get_item(db_session, current_user) -> None:
