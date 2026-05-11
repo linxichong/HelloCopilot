@@ -2,7 +2,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hello-copilot
-  namespace: study-prod
 spec:
   selector:
     app: hello-copilot-app

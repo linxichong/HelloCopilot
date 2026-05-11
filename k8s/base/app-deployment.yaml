@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-copilot-app
-  namespace: study-dev
 spec:
   replicas: 1
   selector:
@@ -13,8 +12,6 @@ spec:
       labels:
         app: hello-copilot-app
     spec:
-      imagePullSecrets:
-        - name: hello-copilot-registry
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
@@ -23,7 +20,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hello-copilot-app
-          image: ghcr.io/linxichong/hellocopilot:80c8832e9062
+          image: ghcr.io/linxichong/hellocopilot:latest
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

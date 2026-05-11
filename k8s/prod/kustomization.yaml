@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: study-prod
+resources:
+  - namespace.yaml
+  - ../base
+  - flyway-configmap.yaml
+  - postgres-pvc.yaml
+images:
+  - name: ghcr.io/linxichong/hellocopilot
+    newName: hellocopilot
+    newTag: local
+patches:
+  - target:
+      kind: Deployment
+      name: hello-copilot-app
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: Deployment
+      name: hello-copilot-postgres
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/volumes/0
+        value:
+          name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data

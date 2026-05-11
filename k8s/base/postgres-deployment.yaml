@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hello-copilot-postgres
-  namespace: study-prod
 spec:
   replicas: 1
   selector:
@@ -51,5 +50,4 @@ spec:
               memory: 512Mi
       volumes:
         - name: postgres-data
-          persistentVolumeClaim:
-            claimName: postgres-data
+          emptyDir: {}

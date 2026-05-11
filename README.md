@@ -46,25 +46,23 @@
 │       ├── cicd-workflow-template.yaml
 │       └── run-cicd-workflow.yaml
 └── k8s/
-    ├── dev/
+    ├── base/
     │   ├── app-deployment.yaml
     │   ├── app-service.yaml
-    │   ├── flyway-configmap.yaml
     │   ├── flyway-job.yaml
-    │   ├── namespace.yaml
+    │   ├── kustomization.yaml
     │   ├── postgres-deployment.yaml
     │   ├── postgres-secret.yaml
     │   └── postgres-service.yaml
+    ├── dev/
+    │   ├── flyway-configmap.yaml
+    │   ├── kustomization.yaml
+    │   ├── namespace.yaml
     └── prod/
-        ├── app-deployment.yaml
-        ├── app-service.yaml
         ├── flyway-configmap.yaml
-        ├── flyway-job.yaml
+        ├── kustomization.yaml
         ├── namespace.yaml
-        ├── postgres-deployment.yaml
-        ├── postgres-pvc.yaml
-        ├── postgres-secret.yaml
-        └── postgres-service.yaml
+        └── postgres-pvc.yaml
 ```
 
 ## 启动 PostgreSQL 和执行 Flyway 迁移
@@ -109,29 +107,14 @@ kind create cluster --name hellocopilot
 docker build -t hellocopilot:local .
 kind load docker-image hellocopilot:local --name hellocopilot
 sh scripts/generate-flyway-configmaps.sh
-kubectl apply -f k8s/dev/namespace.yaml
-kubectl apply -f k8s/dev/postgres-secret.yaml
-kubectl apply -f k8s/dev/postgres-service.yaml
-kubectl apply -f k8s/dev/postgres-deployment.yaml
-kubectl apply -f k8s/dev/flyway-configmap.yaml
-kubectl apply -f k8s/dev/flyway-job.yaml
-kubectl apply -f k8s/dev/app-service.yaml
-kubectl apply -f k8s/dev/app-deployment.yaml
+kubectl apply -k k8s/dev
 ```
 
 ### 本番环境（study-prod）
 
 ```bash
 sh scripts/generate-flyway-configmaps.sh
-kubectl apply -f k8s/prod/namespace.yaml
-kubectl apply -f k8s/prod/postgres-secret.yaml
-kubectl apply -f k8s/prod/postgres-pvc.yaml
-kubectl apply -f k8s/prod/postgres-service.yaml
-kubectl apply -f k8s/prod/postgres-deployment.yaml
-kubectl apply -f k8s/prod/flyway-configmap.yaml
-kubectl apply -f k8s/prod/flyway-job.yaml
-kubectl apply -f k8s/prod/app-service.yaml
-kubectl apply -f k8s/prod/app-deployment.yaml
+kubectl apply -k k8s/prod
 ```
 
 等待 PostgreSQL 和 Flyway 迁移完成后，使用端口转发访问服务：
@@ -154,7 +137,8 @@ kubectl port-forward --address 0.0.0.0 service/hello-copilot 8000:80 -n study-de
 - `flyway-configmap.yaml` 是给 Argo CD 同步用的生成产物，由 `scripts/generate-flyway-configmaps.sh` 从 `db/migration/*.sql` 生成，不要手动编辑 ConfigMap 里的 SQL；新增 migration 时只维护 `db/migration` 下的 SQL 文件。
 - CI/CD 会在部署提交里重新生成并提交 `flyway-configmap.yaml`，避免手工维护生成内容。
 - `flyway-migrate` 在 Argo CD 中作为 `PreSync` hook 运行，每次 Argo CD sync 前会重新创建并执行；迁移失败时会停止后续部署。
-- 如果绕过 Argo CD 直接用 `kubectl apply`，Kubernetes Job 不会自动重复执行，需要先删除旧 Job 再应用相应的 `k8s/dev/flyway-job.yaml` 或 `k8s/prod/flyway-job.yaml`。
+- dev/prod 使用 Kustomize 管理环境差异：公共资源在 `k8s/base`，环境差异在 `k8s/dev/kustomization.yaml` 和 `k8s/prod/kustomization.yaml`。
+- 如果绕过 Argo CD 直接用 `kubectl apply -k`，Kubernetes Job 不会自动重复执行，需要先删除旧 Job 再重新应用相应 overlay。
 
 ## Argo CD
 
@@ -384,7 +368,7 @@ kubectl -n argo port-forward --address 0.0.0.0 service/argo-server 2746:2746
 1. 从 GitHub 拉取代码。
 2. 安装依赖并执行测试命令。
 3. 使用 Kaniko 构建镜像并推送到 GHCR。
-4. 修改 `k8s/dev/app-deployment.yaml` 中的镜像 tag。
+4. 修改 `k8s/dev/kustomization.yaml` 中的镜像 tag。
 5. 将 manifest 变更提交并 push 回 GitHub。
 6. 调用 Argo CD 同步 `hello-copilot-dev`。
 

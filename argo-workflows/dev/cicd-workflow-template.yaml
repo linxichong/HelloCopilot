@@ -25,7 +25,7 @@ spec:
       - name: github-repo
         value: linxichong/HelloCopilot
       - name: manifest-path
-        value: k8s/dev/app-deployment.yaml
+        value: k8s/dev/kustomization.yaml
       - name: argocd-app
         value: hello-copilot-dev
       - name: test-command
@@ -124,13 +124,13 @@ spec:
             set -eu
             apk add --no-cache yq
             COMMIT_SHA="{{inputs.parameters.commit-sha}}"
-            export IMAGE="{{workflow.parameters.image-repo}}:${COMMIT_SHA}"
             sh scripts/generate-flyway-configmaps.sh
-            yq -i '(.spec.template.spec.containers[] | select(.name == "hello-copilot-app").image) = strenv(IMAGE)' "{{workflow.parameters.manifest-path}}"
+            export COMMIT_SHA
+            yq -i '(.images[] | select(.name == "ghcr.io/linxichong/hellocopilot").newTag) = strenv(COMMIT_SHA)' "{{workflow.parameters.manifest-path}}"
             git config user.name "hello-copilot-bot"
             git config user.email "hello-copilot-bot@users.noreply.github.com"
             if git diff --quiet; then
-              echo "Manifest already uses ${IMAGE}"
+              echo "Manifest already uses {{workflow.parameters.image-repo}}:${COMMIT_SHA}"
               exit 0
             fi
             git add "{{workflow.parameters.manifest-path}}" k8s/dev/flyway-configmap.yaml k8s/prod/flyway-configmap.yaml

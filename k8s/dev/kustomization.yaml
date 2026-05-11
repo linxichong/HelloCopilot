@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: study-dev
+resources:
+  - namespace.yaml
+  - ../base
+  - flyway-configmap.yaml
+images:
+  - name: ghcr.io/linxichong/hellocopilot
+    newTag: 80c8832e9062
+patches:
+  - target:
+      kind: Deployment
+      name: hello-copilot-app
+    patch: |-
+      - op: add
+        path: /spec/template/spec/imagePullSecrets
+        value:
+          - name: hello-copilot-registry
