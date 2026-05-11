@@ -7,7 +7,7 @@ resources:
   - flyway-configmap.yaml
 images:
   - name: ghcr.io/linxichong/hellocopilot
-    newTag: 80c8832e9062
+    newTag: e4891481ee79
 patches:
   - target:
       kind: Deployment
