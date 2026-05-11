@@ -13,14 +13,35 @@ spec:
       labels:
         app: hello-copilot-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: hello-copilot-app
           image: hellocopilot:local
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
           ports:
             - containerPort: 8000
           env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
             - name: DATABASE_URL
               value: postgresql+psycopg://test:test@hello-copilot-postgres:5432/hello_copilot
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
           readinessProbe:
             httpGet:
               path: /health
@@ -35,3 +56,9 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
             failureThreshold: 3
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

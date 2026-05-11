@@ -12,9 +12,17 @@ spec:
   template:
     spec:
       restartPolicy: OnFailure
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: flyway
           image: flyway/flyway:10-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           args: ["-connectRetries=60", "migrate"]
           env:
             - name: FLYWAY_URL
@@ -32,6 +40,13 @@ spec:
           volumeMounts:
             - name: flyway-sql
               mountPath: /flyway/sql
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
       volumes:
         - name: flyway-sql
           configMap:
