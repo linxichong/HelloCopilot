@@ -23,7 +23,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: hello-copilot-app
-          image: ghcr.io/linxichong/hellocopilot:a4b92e59316d
+          image: ghcr.io/linxichong/hellocopilot:c037afb29354
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
