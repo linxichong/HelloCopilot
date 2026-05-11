@@ -1,8 +1,9 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: hello-copilot-postgres
 spec:
+  serviceName: hello-copilot-postgres-headless
   replicas: 1
   selector:
     matchLabels:
@@ -48,6 +49,12 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-      volumes:
-        - name: postgres-data
-          emptyDir: {}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

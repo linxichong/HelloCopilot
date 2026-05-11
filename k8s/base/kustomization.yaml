@@ -4,6 +4,7 @@ resources:
   - app-deployment.yaml
   - app-service.yaml
   - flyway-job.yaml
-  - postgres-deployment.yaml
+  - postgres-statefulset.yaml
   - postgres-secret.yaml
   - postgres-service.yaml
+  - postgres-headless-service.yaml

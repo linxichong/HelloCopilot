@@ -51,7 +51,8 @@
     │   ├── app-service.yaml
     │   ├── flyway-job.yaml
     │   ├── kustomization.yaml
-    │   ├── postgres-deployment.yaml
+    │   ├── postgres-headless-service.yaml
+    │   ├── postgres-statefulset.yaml
     │   ├── postgres-secret.yaml
     │   └── postgres-service.yaml
     ├── dev/
@@ -61,8 +62,7 @@
     └── prod/
         ├── flyway-configmap.yaml
         ├── kustomization.yaml
-        ├── namespace.yaml
-        └── postgres-pvc.yaml
+        └── namespace.yaml
 ```
 
 ## 启动 PostgreSQL 和执行 Flyway 迁移
@@ -132,8 +132,7 @@ kubectl port-forward --address 0.0.0.0 service/hello-copilot 8000:80 -n study-de
 
 注意：
 
-- 开发环境使用 `emptyDir` 存储，数据仅在 Pod 存活期间保留。
-- 本番环境使用 PVC 存储，数据会在 Pod 重建时保留。
+- PostgreSQL 使用 StatefulSet，并通过 `volumeClaimTemplates` 自动创建 PVC；dev/prod 的数据都会在 Pod 重建时保留。
 - `flyway-configmap.yaml` 是给 Argo CD 同步用的生成产物，由 `scripts/generate-flyway-configmaps.sh` 从 `db/migration/*.sql` 生成，不要手动编辑 ConfigMap 里的 SQL；新增 migration 时只维护 `db/migration` 下的 SQL 文件。
 - CI/CD 会在部署提交里重新生成并提交 `flyway-configmap.yaml`，避免手工维护生成内容。
 - `flyway-migrate` 在 Argo CD 中作为 `PreSync` hook 运行，每次 Argo CD sync 前会重新创建并执行；迁移失败时会停止后续部署。

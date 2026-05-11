@@ -5,7 +5,6 @@ resources:
   - namespace.yaml
   - ../base
   - flyway-configmap.yaml
-  - postgres-pvc.yaml
 images:
   - name: ghcr.io/linxichong/hellocopilot
     newName: hellocopilot
@@ -18,13 +17,3 @@ patches:
       - op: replace
         path: /spec/replicas
         value: 3
-  - target:
-      kind: Deployment
-      name: hello-copilot-postgres
-    patch: |-
-      - op: replace
-        path: /spec/template/spec/volumes/0
-        value:
-          name: postgres-data
-          persistentVolumeClaim:
-            claimName: postgres-data
