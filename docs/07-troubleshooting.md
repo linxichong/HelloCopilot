@@ -124,7 +124,7 @@ kubectl -n study-dev describe postgresql hello-copilot-postgres
 
 ## HAProxy 状态
 
-应用和 Flyway 默认通过 `hello-copilot-postgres-proxy:5432` 连接写库。只读连接可以使用 `hello-copilot-postgres-proxy:5433`。
+HAProxy 负责主从路由。PgBouncer 和 Flyway 通过 `hello-copilot-postgres-proxy:5432` 连接写库。只读连接可以使用 `hello-copilot-postgres-proxy:5433`。
 
 ```bash
 kubectl -n study-dev get deploy,svc hello-copilot-postgres-haproxy hello-copilot-postgres-proxy
@@ -136,6 +136,24 @@ kubectl -n study-dev port-forward service/hello-copilot-postgres-proxy 8404:8404
 
 ```text
 http://127.0.0.1:8404/stats
+```
+
+## PgBouncer 状态
+
+应用默认通过 `hello-copilot-postgres-pgbouncer:6432` 连接数据库，PgBouncer 再连接 HAProxy 写入口。
+
+```bash
+kubectl -n study-dev get deploy,svc hello-copilot-postgres-pgbouncer
+kubectl -n study-dev logs deployment/hello-copilot-postgres-pgbouncer --tail=120
+```
+
+进入临时 PostgreSQL 客户端查看 PgBouncer 连接池：
+
+```bash
+kubectl -n study-dev run pgbouncer-check --rm -i --restart=Never \
+  --image=postgres:16-alpine \
+  --env PGPASSWORD="$(kubectl -n study-dev get secret test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do -o jsonpath='{.data.password}' | base64 -d)" \
+  -- psql -h hello-copilot-postgres-pgbouncer -p 6432 -U test -d pgbouncer -c "SHOW POOLS;"
 ```
 
 ## Kustomize 渲染检查

@@ -8,3 +8,6 @@ resources:
   - postgres-haproxy-configmap.yaml
   - postgres-haproxy-deployment.yaml
   - postgres-haproxy-service.yaml
+  - postgres-pgbouncer-configmap.yaml
+  - postgres-pgbouncer-deployment.yaml
+  - postgres-pgbouncer-service.yaml

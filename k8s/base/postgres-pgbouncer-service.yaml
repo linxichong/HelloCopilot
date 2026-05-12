@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-copilot-postgres-pgbouncer
+spec:
+  selector:
+    app: hello-copilot-postgres-pgbouncer
+  ports:
+    - name: postgres
+      port: 6432
+      targetPort: postgres
+  type: ClusterIP

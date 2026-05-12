@@ -76,8 +76,10 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 - `k8s/base/postgres-cluster.yaml` 声明 2 个实例：1 个主库和 1 个副本，由 Patroni 管理复制与故障切换。
 - `hello-copilot-postgres` 是 app 和 Flyway 访问数据库的读写 Service，指向当前主库。
 - `hello-copilot-postgres-repl` 是只读副本 Service，后续读查询或 BI 工具可以连接它。
-- `hello-copilot-postgres-proxy` 是 HAProxy Service，应用和 Flyway 默认连接它的 `5432` 写入口；`5433` 是只读入口。
+- `hello-copilot-postgres-proxy` 是 HAProxy Service，`5432` 是写入口，`5433` 是只读入口。
 - HAProxy stats 暴露在 `hello-copilot-postgres-proxy:8404/stats`。
+- `hello-copilot-postgres-pgbouncer` 是应用侧数据库连接池，应用默认连接它的 `6432` 端口。PgBouncer 使用 transaction pooling，后端再连接 HAProxy 写入口。
+- Flyway 仍直接连接 HAProxy 写入口，避免迁移任务和应用连接池互相影响。
 - `test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do` 是 operator 自动生成的数据库用户 Secret。
 - Flyway Job 在 Argo CD 中作为 `PreSync` hook 运行。
 - app 的 liveness probe 使用 `/live`，只检查进程是否存活。
@@ -90,6 +92,7 @@ kubectl -n study-dev get pods
 kubectl -n study-dev get postgresql,deploy,statefulset,svc,pvc,job
 kubectl -n study-dev get pods -l application=spilo -L spilo-role
 kubectl -n study-dev get deploy,svc hello-copilot-postgres-haproxy hello-copilot-postgres-proxy
+kubectl -n study-dev get deploy,svc hello-copilot-postgres-pgbouncer
 kubectl -n study-dev get secret test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
 kubectl -n study-dev describe pod <pod-name>
 ```

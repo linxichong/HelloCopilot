@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-copilot-postgres-pgbouncer
+data:
+  pgbouncer.ini: |
+    [databases]
+    hello_copilot = host=hello-copilot-postgres-proxy port=5432 dbname=hello_copilot
+
+    [pgbouncer]
+    listen_addr = 0.0.0.0
+    listen_port = 6432
+    auth_type = plain
+    auth_file = /etc/pgbouncer/secrets/userlist.txt
+    pool_mode = transaction
+    max_client_conn = 200
+    default_pool_size = 20
+    reserve_pool_size = 5
+    reserve_pool_timeout = 5
+    server_idle_timeout = 60
+    server_lifetime = 3600
+    ignore_startup_parameters = extra_float_digits
+    admin_users = test
+    stats_users = test
