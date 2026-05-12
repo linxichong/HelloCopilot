@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://test:test@localhost:5432/hello_copilot"
+    external_source_api_url: str = ""
+    external_source_system: str = "external_api"
     auth_enabled: bool = False
     auth_issuer: str = ""
     auth_audience: str = ""

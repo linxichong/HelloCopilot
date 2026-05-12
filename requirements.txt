@@ -4,3 +4,5 @@ SQLAlchemy==2.0.49
 psycopg[binary]==3.3.4
 pydantic-settings==2.7.1
 PyJWT[crypto]==2.10.1
+httpx==0.28.1
+prefect==3.7.0

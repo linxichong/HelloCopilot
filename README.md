@@ -6,6 +6,7 @@
 
 - FastAPI + SQLAlchemy
 - PostgreSQL + Flyway
+- Prefect ETL / DWH pipeline
 - Docker Compose
 - Kubernetes + Kustomize
 - Argo CD
@@ -70,6 +71,26 @@ uvicorn app.main:app --reload
 python -m compileall app tests
 pytest
 ```
+
+运行 Prefect 数据入仓 flow：
+
+```bash
+export EXTERNAL_SOURCE_API_URL=https://example.com/api/records
+export EXTERNAL_SOURCE_SYSTEM=external_api
+python -m app.dwh_flow
+```
+
+该 flow 会从外部 JSON API 拉取记录，先落到 `external_raw_records` 原始层，再转换写入 `dwh_external_record_facts` 分析事实表。API 返回值可以是数组，也可以是包含 `data`、`items` 或 `records` 数组的对象。
+
+学习测试可以直接使用 JSONPlaceholder，它是一个免注册的公开 fake REST API：
+
+```bash
+export EXTERNAL_SOURCE_API_URL=https://jsonplaceholder.typicode.com/todos
+export EXTERNAL_SOURCE_SYSTEM=jsonplaceholder_todos
+python -m app.dwh_flow
+```
+
+`/todos` 会返回 200 条任务数据，flow 会把 `id` 当成外部 ID、`title` 映射到 `name`，并把 `completed` 映射成 `done` / `open`。
 
 部署到 Kind dev 环境：
 
