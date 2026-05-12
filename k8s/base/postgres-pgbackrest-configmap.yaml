@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hello-copilot-postgres-pgbackrest
+data:
+  pgbackrest.conf: |
+    [global]
+    repo1-path=/var/lib/pgbackrest
+    repo1-retention-full=2
+    repo1-retention-diff=3
+    log-level-console=info
+    start-fast=y
+    process-max=2
+    archive-check=n
+
+    [hello-copilot]
+    pg1-path=/home/postgres/pgdata/pgroot/data
+    pg1-socket-path=/var/run/postgresql

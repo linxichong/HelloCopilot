@@ -156,6 +156,22 @@ kubectl -n study-dev run pgbouncer-check --rm -i --restart=Never \
   -- psql -h hello-copilot-postgres-pgbouncer -p 6432 -U test -d pgbouncer -c "SHOW POOLS;"
 ```
 
+## pgBackRest 状态
+
+查看 pgBackRest repo PVC 和 Postgres Pod 中的 sidecar：
+
+```bash
+kubectl -n study-dev get pvc hello-copilot-postgres-pgbackrest-repo
+kubectl -n study-dev get pods -l application=spilo -L spilo-role
+```
+
+进入当前主库 Pod 的 `pgbackrest` sidecar：
+
+```bash
+MASTER_POD=$(kubectl -n study-dev get pod -l application=spilo,spilo-role=master -o jsonpath='{.items[0].metadata.name}')
+kubectl -n study-dev exec "$MASTER_POD" -c pgbackrest -- pgbackrest --stanza=hello-copilot info
+```
+
 ## Kustomize 渲染检查
 
 ```bash

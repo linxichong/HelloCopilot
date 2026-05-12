@@ -18,6 +18,43 @@ spec:
     ttl: 30
     loop_wait: 10
     retry_timeout: 10
+  additionalVolumes:
+    - name: postgres-socket
+      mountPath: /var/run/postgresql
+      targetContainers:
+        - postgres
+        - pgbackrest
+      volumeSource:
+        emptyDir: {}
+    - name: pgbackrest-config
+      mountPath: /etc/pgbackrest/pgbackrest.conf
+      subPath: pgbackrest.conf
+      targetContainers:
+        - pgbackrest
+      volumeSource:
+        configMap:
+          name: hello-copilot-postgres-pgbackrest
+    - name: pgbackrest-repo
+      mountPath: /var/lib/pgbackrest
+      targetContainers:
+        - pgbackrest
+      volumeSource:
+        persistentVolumeClaim:
+          claimName: hello-copilot-postgres-pgbackrest-repo
+  sidecars:
+    - name: pgbackrest
+      image: woblerr/pgbackrest:2.58.0-alpine
+      command:
+        - sh
+        - -c
+        - "trap : TERM INT; sleep infinity & wait"
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
   volume:
     size: 1Gi
   resources:

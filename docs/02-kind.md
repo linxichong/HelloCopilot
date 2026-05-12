@@ -80,6 +80,7 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 - HAProxy stats 暴露在 `hello-copilot-postgres-proxy:8404/stats`。
 - `hello-copilot-postgres-pgbouncer` 是应用侧数据库连接池，应用默认连接它的 `6432` 端口。PgBouncer 使用 transaction pooling，后端再连接 HAProxy 写入口。
 - Flyway 仍直接连接 HAProxy 写入口，避免迁移任务和应用连接池互相影响。
+- `pgbackrest` sidecar 和 `hello-copilot-postgres-pgbackrest-repo` PVC 用于学习 pgBackRest 物理备份；详细命令见 [pgBackRest 备份与还原](08-backup-restore.md)。
 - `test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do` 是 operator 自动生成的数据库用户 Secret。
 - Flyway Job 在 Argo CD 中作为 `PreSync` hook 运行。
 - app 的 liveness probe 使用 `/live`，只检查进程是否存活。
@@ -93,6 +94,7 @@ kubectl -n study-dev get postgresql,deploy,statefulset,svc,pvc,job
 kubectl -n study-dev get pods -l application=spilo -L spilo-role
 kubectl -n study-dev get deploy,svc hello-copilot-postgres-haproxy hello-copilot-postgres-proxy
 kubectl -n study-dev get deploy,svc hello-copilot-postgres-pgbouncer
+kubectl -n study-dev get pvc hello-copilot-postgres-pgbackrest-repo
 kubectl -n study-dev get secret test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
 kubectl -n study-dev describe pod <pod-name>
 ```

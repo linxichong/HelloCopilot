@@ -26,6 +26,7 @@
 5. [Argo Events 自动触发](docs/05-events.md)
 6. [Authentik 单点登录与 API 认证](docs/06-authentik.md)
 7. [常见问题与排障](docs/07-troubleshooting.md)
+8. [pgBackRest 备份与还原](docs/08-backup-restore.md)
 
 ## 目录结构
 
@@ -121,6 +122,7 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 - `hello-copilot-postgres` 是主库读写 Service，`hello-copilot-postgres-repl` 是只读副本 Service。
 - `hello-copilot-postgres-proxy` 是 HAProxy 入口，`5432` 转发写库，`5433` 转发只读副本。
 - `hello-copilot-postgres-pgbouncer` 是应用侧连接池入口，应用默认连接它的 `6432` 端口，再由 PgBouncer 转发到 HAProxy 写入口。
+- `pgbackrest` sidecar 和 `hello-copilot-postgres-pgbackrest-repo` PVC 用于学习 pgBackRest 物理备份与还原。
 - Flyway Job 作为 Argo CD `PreSync` hook 执行。
 - Kubernetes liveness probe 使用 `/live`，readiness probe 使用 `/ready` 检查数据库连通性。
 - CI 构建镜像后更新 `k8s/dev/kustomization.yaml` 中的镜像 tag。
