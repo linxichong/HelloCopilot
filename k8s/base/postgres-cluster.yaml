@@ -1,0 +1,29 @@
+apiVersion: acid.zalan.do/v1
+kind: postgresql
+metadata:
+  name: hello-copilot-postgres
+spec:
+  teamId: hello-copilot
+  numberOfInstances: 2
+  users:
+    test:
+      - createdb
+  databases:
+    hello_copilot: test
+  postgresql:
+    version: "16"
+    parameters:
+      max_connections: "100"
+  patroni:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+  volume:
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi

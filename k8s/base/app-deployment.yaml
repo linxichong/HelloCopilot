@@ -33,7 +33,23 @@ spec:
             - name: PYTHONDONTWRITEBYTECODE
               value: "1"
             - name: DATABASE_URL
-              value: postgresql+psycopg://test:test@hello-copilot-postgres:5432/hello_copilot
+              value: ""
+            - name: DATABASE_HOST
+              value: hello-copilot-postgres
+            - name: DATABASE_PORT
+              value: "5432"
+            - name: DATABASE_NAME
+              value: hello_copilot
+            - name: DATABASE_USER
+              valueFrom:
+                secretKeyRef:
+                  name: test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
+                  key: username
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
+                  key: password
           resources:
             requests:
               cpu: 100m

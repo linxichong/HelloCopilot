@@ -29,13 +29,13 @@ spec:
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: postgres-user
+                  name: test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
+                  key: username
             - name: FLYWAY_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: postgres-secret
-                  key: postgres-password
+                  name: test.hello-copilot-postgres.credentials.postgresql.acid.zalan.do
+                  key: password
           volumeMounts:
             - name: flyway-sql
               mountPath: /flyway/sql

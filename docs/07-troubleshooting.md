@@ -95,25 +95,32 @@ kubectl -n study-dev get events --sort-by=.lastTimestamp
 kubectl -n study-dev logs pod/<pod-name> --previous
 ```
 
-## Postgres 权限错误
+## Postgres Operator 未安装
 
 现象：
 
 ```text
-chmod: /var/run/postgresql: Operation not permitted
-chown: /var/lib/postgresql/data: Operation not permitted
+no matches for kind "postgresql" in version "acid.zalan.do/v1"
 ```
 
-原因通常是对官方 Postgres 镜像过度收紧了 Linux capabilities。官方镜像启动时会调整数据目录权限，不能简单 `capabilities.drop: [ALL]`。
+说明集群里还没有安装 Zalando Postgres Operator 或 CRD。先安装 operator，再部署本项目：
 
-当前项目保留：
-
-```yaml
-securityContext:
-  allowPrivilegeEscalation: false
+```bash
+kubectl get crd postgresqls.acid.zalan.do
+kubectl -n postgres-operator get pods,deploy
 ```
 
-但没有对 Postgres 容器设置 `drop: [ALL]`。
+## Postgres 主从状态
+
+Zalando Operator 使用 Spilo + Patroni 管理数据库实例。查看当前主库和副本：
+
+```bash
+kubectl -n study-dev get pods -l application=spilo -L spilo-role
+kubectl -n study-dev get svc hello-copilot-postgres hello-copilot-postgres-repl
+kubectl -n study-dev describe postgresql hello-copilot-postgres
+```
+
+`spilo-role=master` 是当前读写主库，`spilo-role=replica` 是只读副本。应用和 Flyway 默认连接 `hello-copilot-postgres`，也就是主库 Service。
 
 ## Kustomize 渲染检查
 
@@ -155,10 +162,10 @@ kubectl -n study-dev get pods -l workflows.argoproj.io/workflow=<workflow-name>
 kubectl -n study-dev logs pod/<pod-name> -c main
 ```
 
-## 查看 StatefulSet 和 PVC
+## 查看数据库 StatefulSet 和 PVC
 
 ```bash
-kubectl -n study-dev get statefulset,pvc,pod -l app=hello-copilot-postgres
+kubectl -n study-dev get statefulset,pvc,pod -l cluster-name=hello-copilot-postgres
+kubectl -n study-dev get pods -l application=spilo -L spilo-role
 kubectl -n study-dev describe statefulset hello-copilot-postgres
-kubectl -n study-dev describe pvc postgres-data-hello-copilot-postgres-0
 ```

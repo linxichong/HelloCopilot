@@ -6,6 +6,7 @@
 
 - FastAPI + SQLAlchemy
 - PostgreSQL + Flyway
+- Zalando Postgres Operator / Patroni
 - Prefect ETL / DWH pipeline
 - Docker Compose
 - Kubernetes + Kustomize
@@ -116,8 +117,8 @@ kubectl -n study-dev port-forward --address 0.0.0.0 service/hello-copilot 8000:8
 
 - `k8s/base` 放公共资源。
 - `k8s/dev` 和 `k8s/prod` 使用 Kustomize overlay 管理环境差异。
-- PostgreSQL 使用 StatefulSet。
-- PostgreSQL 通过 `volumeClaimTemplates` 自动创建 PVC。
+- PostgreSQL 使用 Zalando Postgres Operator 创建 Patroni 主从集群。
+- `hello-copilot-postgres` 是主库读写 Service，`hello-copilot-postgres-repl` 是只读副本 Service。
 - Flyway Job 作为 Argo CD `PreSync` hook 执行。
 - Kubernetes liveness probe 使用 `/live`，readiness probe 使用 `/ready` 检查数据库连通性。
 - CI 构建镜像后更新 `k8s/dev/kustomization.yaml` 中的镜像 tag。
