@@ -25,7 +25,7 @@ spec:
           args: ["-connectRetries=60", "migrate"]
           env:
             - name: FLYWAY_URL
-              value: jdbc:postgresql://hello-copilot-postgres:5432/hello_copilot
+              value: jdbc:postgresql://hello-copilot-postgres-proxy:5432/hello_copilot
             - name: FLYWAY_USER
               valueFrom:
                 secretKeyRef:

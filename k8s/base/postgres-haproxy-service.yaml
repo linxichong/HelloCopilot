@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-copilot-postgres-proxy
+spec:
+  selector:
+    app: hello-copilot-postgres-haproxy
+  ports:
+    - name: pg-write
+      port: 5432
+      targetPort: pg-write
+    - name: pg-read
+      port: 5433
+      targetPort: pg-read
+    - name: stats
+      port: 8404
+      targetPort: stats
+  type: ClusterIP

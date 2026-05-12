@@ -5,3 +5,6 @@ resources:
   - app-service.yaml
   - flyway-job.yaml
   - postgres-cluster.yaml
+  - postgres-haproxy-configmap.yaml
+  - postgres-haproxy-deployment.yaml
+  - postgres-haproxy-service.yaml

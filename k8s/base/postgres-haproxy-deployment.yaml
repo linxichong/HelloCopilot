@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-copilot-postgres-haproxy
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-copilot-postgres-haproxy
+  template:
+    metadata:
+      labels:
+        app: hello-copilot-postgres-haproxy
+    spec:
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: haproxy
+          image: haproxy:3.0-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - name: pg-write
+              containerPort: 5432
+            - name: pg-read
+              containerPort: 5433
+            - name: stats
+              containerPort: 8404
+          volumeMounts:
+            - name: haproxy-config
+              mountPath: /usr/local/etc/haproxy
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            tcpSocket:
+              port: pg-write
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: pg-write
+            initialDelaySeconds: 10
+            periodSeconds: 20
+      volumes:
+        - name: haproxy-config
+          configMap:
+            name: hello-copilot-postgres-haproxy

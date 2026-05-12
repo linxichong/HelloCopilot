@@ -122,6 +122,22 @@ kubectl -n study-dev describe postgresql hello-copilot-postgres
 
 `spilo-role=master` 是当前读写主库，`spilo-role=replica` 是只读副本。应用和 Flyway 默认连接 `hello-copilot-postgres`，也就是主库 Service。
 
+## HAProxy 状态
+
+应用和 Flyway 默认通过 `hello-copilot-postgres-proxy:5432` 连接写库。只读连接可以使用 `hello-copilot-postgres-proxy:5433`。
+
+```bash
+kubectl -n study-dev get deploy,svc hello-copilot-postgres-haproxy hello-copilot-postgres-proxy
+kubectl -n study-dev logs deployment/hello-copilot-postgres-haproxy --tail=120
+kubectl -n study-dev port-forward service/hello-copilot-postgres-proxy 8404:8404
+```
+
+然后打开 HAProxy stats：
+
+```text
+http://127.0.0.1:8404/stats
+```
+
 ## Kustomize 渲染检查
 
 ```bash

@@ -35,7 +35,7 @@ spec:
             - name: DATABASE_URL
               value: ""
             - name: DATABASE_HOST
-              value: hello-copilot-postgres
+              value: hello-copilot-postgres-proxy
             - name: DATABASE_PORT
               value: "5432"
             - name: DATABASE_NAME
