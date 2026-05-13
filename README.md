@@ -8,6 +8,7 @@
 - PostgreSQL + Flyway
 - Zalando Postgres Operator / Patroni
 - Prefect ETL / DWH pipeline
+- Dask distributed data processing
 - Docker Compose
 - Kubernetes + Kustomize
 - Argo CD
@@ -27,6 +28,7 @@
 6. [Authentik 单点登录与 API 认证](docs/06-authentik.md)
 7. [常见问题与排障](docs/07-troubleshooting.md)
 8. [pgBackRest 备份与还原](docs/08-backup-restore.md)
+9. [Dask + Prefect 大数据处理](docs/09-dask-prefect.md)
 
 ## 目录结构
 
@@ -93,6 +95,15 @@ python -m app.dwh_flow
 ```
 
 `/todos` 会返回 200 条任务数据，flow 会把 `id` 当成外部 ID、`title` 映射到 `name`，并把 `completed` 映射成 `done` / `open`。
+
+运行 Dask + Prefect 大数据处理 flow：
+
+```bash
+export EXTERNAL_SOURCE_API_URL=https://jsonplaceholder.typicode.com/todos
+python -m app.dask_dwh_flow
+```
+
+该 flow 会用 Prefect 编排任务，并用 Dask threaded scheduler 对记录做分区并行统计。可以通过 `scale_factor` 放大输入数据量，用于学习大数据处理的分区计算模式。
 
 部署到 Kind dev 环境：
 
